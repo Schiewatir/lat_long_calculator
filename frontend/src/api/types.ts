@@ -25,7 +25,72 @@ export interface Capabilities {
   gazetteer_countries: number
   max_upload_mb: number
   max_rows: number
+  distance_address_available: boolean
+  road_distance_available: boolean
+  distance_map: 'leaflet' | 'off'
   attribution: string[]
+}
+
+// --- Distance calculator ---
+export type Precision = 'rooftop' | 'street' | 'postcode' | 'city' | 'region' | 'country' | 'manual'
+export type DistanceSide = 'origin' | 'destination'
+
+export interface AddressFields {
+  street: string
+  house_number: string
+  postcode: string
+  city: string
+  region: string
+  country: string
+  text: string
+}
+
+export type LocationInput =
+  | ({ type: 'address' } & Partial<AddressFields>)
+  | { type: 'coords'; lat: number; lon: number; label?: string; precision?: Precision; place_id?: string | null }
+
+export interface DistanceRequest {
+  origin: LocationInput
+  destination: LocationInput
+  road: boolean
+}
+
+export interface Place {
+  label: string
+  lat: number
+  lon: number
+  precision: Precision
+  place_id: string | null
+  partial_match: boolean
+}
+
+export interface ResolvedLocation extends Place {
+  source: 'google' | 'input'
+  alternatives: Place[]
+}
+
+export interface DistanceValue {
+  km: number
+  mi: number
+}
+
+export type RoadUnavailable = 'disabled' | 'no_route' | 'provider_error' | 'same_point'
+
+export interface DistanceResponse {
+  origin: ResolvedLocation
+  destination: ResolvedLocation
+  straight_line: DistanceValue
+  road: (DistanceValue & { duration_s: number; polyline: string | null }) | null
+  road_distance_unavailable: RoadUnavailable | null
+  attribution: string[]
+}
+
+/** `detail` of a 422 for one side that could not be resolved. */
+export interface DistanceSideError {
+  code: 'location_not_found' | 'invalid_location'
+  side: DistanceSide
+  message: string
+  resolved: Partial<Record<DistanceSide, ResolvedLocation>>
 }
 
 export type TargetField = 'street' | 'house_number' | 'city' | 'postcode' | 'country' | 'id' | 'full_address'

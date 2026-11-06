@@ -14,6 +14,7 @@ os.environ.update(
     OPENAI_AUTH_STYLE="bearer",
     OPENAI_BATCH_ENABLED="true",
     GEOCODER_API_KEY="",
+    GOOGLE_MAPS_API_KEY="",
     UPLOAD_DIR=tempfile.mkdtemp(prefix="gw-uploads-"),
 )
 

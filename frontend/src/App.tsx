@@ -9,6 +9,7 @@ import { LoginPage } from './pages/LoginPage'
 
 const JobPage = lazy(() => import('./pages/JobPage').then((m) => ({ default: m.JobPage })))
 const NewJobPage = lazy(() => import('./pages/NewJobPage').then((m) => ({ default: m.NewJobPage })))
+const DistancePage = lazy(() => import('./pages/DistancePage').then((m) => ({ default: m.DistancePage })))
 const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage').then((m) => ({ default: m.AdminUsersPage })))
 const AdminScoringPage = lazy(() => import('./pages/AdminScoringPage').then((m) => ({ default: m.AdminScoringPage })))
 
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="/" element={<JobsPage />} />
         <Route path="/jobs/new" element={<NewJobPage />} />
         <Route path="/jobs/:jobId" element={<JobPage />} />
+        <Route path="/distance" element={<DistancePage />} />
         <Route
           path="/admin/users"
           element={

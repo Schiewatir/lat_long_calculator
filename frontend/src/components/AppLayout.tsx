@@ -23,6 +23,9 @@ export function AppLayout() {
               <Button component={NavLink} to="/" variant="subtle" size="compact-sm">
                 Jobs
               </Button>
+              <Button component={NavLink} to="/distance" variant="subtle" size="compact-sm">
+                Distance
+              </Button>
               {me?.role === 'admin' && (
                 <>
                   <Button component={NavLink} to="/admin/users" variant="subtle" size="compact-sm">

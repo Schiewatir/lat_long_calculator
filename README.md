@@ -50,6 +50,9 @@ Open <http://localhost:8080>, sign in, and add users under **Users**.
 | `OPENAI_BATCH_ENABLED` | Batch API for very large jobs. Default on for api.openai.com, **off for gateways** (the corporate gateway returns 404 for `/files` and `/batches`); jobs then use concurrent requests. |
 | `GEOCODER_PROVIDER` / `GEOCODER_API_KEY` | `opencage` (default). Empty key = offline only (street rows located at postcode/city level). |
 | `GEOCODER_RPS` | Requests/second allowed by your OpenCage plan (shared by all workers). |
+| `GOOGLE_MAPS_API_KEY` | Enables address lookup and road distance on the **Distance** page only (see below). Empty = Distance page works with coordinates (straight-line distance) only. |
+| `GOOGLE_ROUTES_ENABLED`, `GOOGLE_RPS`, `GOOGLE_CACHE_TTL_HOURS`, `GOOGLE_LANGUAGE` | Road distance on/off, global Google request rate, Redis cache TTL (clamped to 720 h = 30 days), language of resolved addresses. |
+| `DISTANCE_PER_USER_PER_MIN`, `DISTANCE_MAP` | Per-user calculation limit (HTTP 429 above it). `DISTANCE_MAP=leaflet` draws Google-resolved points and routes on the OSM map; default `off` until you have checked Google's terms for your region. |
 | `COOKIE_SECURE` | `true` behind HTTPS (production). `false` only for plain-http testing. |
 | `MAX_UPLOAD_MB`, `MAX_ROWS`, `AI_BATCH_THRESHOLD`, `FILE_RETENTION_DAYS` | Limits and thresholds. |
 
@@ -81,8 +84,36 @@ The UI shows both. Map tiles default to `tile.openstreetmap.org`; for production
 |---|---|---|
 | OpenAI | AI repair enabled for the job **and** a row could not be resolved by the rules; ambiguous candidates; column-mapping help when headers are unrecognizable | Street, house number, city, postcode, country of that row + an opaque id. Candidate labels for disambiguation. Headers + ≤ 5 sample rows for mapping help. **No other columns.** |
 | OpenCage | Rows with a street; rows the offline gazetteer cannot place | The structured address (street, house number, postcode, city, country). Results are cached and shared, so an address is never paid for twice. |
+| Google (Geocoding API, Routes API) | Distance page only: an origin/destination entered as an address; road distance between the two resolved points | The address fields typed for that side; the two coordinate pairs for the route. **Never used for jobs.** |
 
 Turn AI repair off per job in the upload wizard to keep everything except street lookups on the server.
+
+## Distance calculator
+
+The **Distance** page (header nav) computes the distance between an origin and a destination. Each one
+is either a postal address (any mix of street, house number, postcode, city, state/region, country,
+or one free-text line) or decimal coordinates (paste `"lat, lon"` into either field). It shows:
+
+- the **straight-line** (great-circle) distance, always;
+- the **road distance and driving time** (Google Routes API, `DRIVE`), when a Google key is set;
+- what each side resolved to (address, coordinates, precision, partial-match warning), plus other
+  matches you can switch to; km/mi toggle; copy-to-clipboard summary.
+
+Coordinates-only calculations are shareable via the URL (`/distance?o=52.52,13.405&d=48.137,11.575`);
+addresses are never put in the URL.
+
+**Google retention rules.** Google's terms do not allow storing or exporting geocodes, so Google is
+*not* a job geocoder (`GEOCODER_PROVIDER=google` is rejected at startup). Distance results are never
+written to PostgreSQL, never enter the shared geocode cache, and never appear in exports. They are
+cached in Redis only, for `GOOGLE_CACHE_TTL_HOURS` (max 30 days).
+
+**Google Cloud setup.**
+1. Create a project, enable billing, and enable **Geocoding API** and **Routes API**.
+2. Create an API key. Restrict it to those two APIs (*API restrictions*) and to the server's egress IP
+   (*Application restrictions → IP addresses*). The key is used only by the backend.
+3. Set a **budget alert** and per-day **quota caps** for both APIs. Each calculation costs at most
+   2 geocoding requests + 1 route request; cache hits and coordinate inputs cost nothing.
+4. Put the key in `.env` as `GOOGLE_MAPS_API_KEY` and restart `api`.
 
 ## Review workflow
 
@@ -118,7 +149,7 @@ make migrate && make demo-gazetteer
 COOKIE_SECURE=false make backend    # http://localhost:8000/api/docs
 make worker                         # second terminal
 cd frontend && npm install && cd .. && make frontend   # http://localhost:5173 (proxies /api)
-make test                           # backend tests (needs postgres + redis) + frontend typecheck/build
+make test                           # backend tests (needs postgres + redis) + frontend unit tests/typecheck/build
 make lint
 ```
 

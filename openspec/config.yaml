@@ -16,7 +16,9 @@ context: |
   Domain rules:
   - OpenAI is NEVER a source of coordinates; it only repairs inputs, suggests column mappings and
     disambiguates between geocoder candidates.
-  - Coordinates come from offline GeoNames data (postcodes/cities) or a storage-permitting geocoding
-    API (OpenCage default). Google Geocoding is excluded (ToS forbids storing/exporting).
-  - Secrets (OPENAI_API_KEY, geocoder key) live in .env, server-side only.
+  - Job coordinates come from offline GeoNames data (postcodes/cities) or a storage-permitting geocoding
+    API (OpenCage default). Google is excluded from job geocoding (ToS forbids storing/exporting).
+  - Google Geocoding + Routes are allowed ONLY for the interactive distance calculator: results are
+    never written to PostgreSQL or exports, Redis cache TTL <= 30 days, key server-side only.
+  - Secrets (OPENAI_API_KEY, geocoder key, GOOGLE_MAPS_API_KEY) live in .env, server-side only.
   - Confidence is computed deterministically from measurable signals, never from LLM self-reports.

@@ -1,5 +1,6 @@
-"""External geocoding providers. Only providers whose terms allow storing and exporting results
-belong here (Google Geocoding is deliberately not implemented)."""
+"""External geocoding providers for jobs. Only providers whose terms allow storing and exporting results
+belong here. Google is deliberately not a job provider; it is used only by the interactive distance
+calculator (`app.distance`), whose results are never persisted."""
 
 import asyncio
 import logging
@@ -107,9 +108,7 @@ def build_provider(name: str, api_key: str | None) -> GeocoderProvider:
     raise ValueError(f"Unknown or unsupported geocoder provider: {name}")
 
 
-async def with_retries(
-    call: Callable[[], Awaitable[list[GeoCandidate]]], attempts: int = 5, base_delay: float = 0.5
-) -> list[GeoCandidate]:
+async def with_retries[T](call: Callable[[], Awaitable[T]], attempts: int = 5, base_delay: float = 0.5) -> T:
     """Retry transient provider failures with exponential backoff and jitter."""
     for attempt in range(1, attempts + 1):
         try:

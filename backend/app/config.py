@@ -1,13 +1,18 @@
 """Application settings, loaded from environment variables and the project `.env` file."""
 
+import logging
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
+log = logging.getLogger(__name__)
+
+# Google Maps Platform terms allow caching latitude/longitude for at most 30 consecutive days.
+GOOGLE_MAX_CACHE_HOURS = 720
 
 
 class Settings(BaseSettings):
@@ -52,6 +57,17 @@ class Settings(BaseSettings):
     geocode_cache_ttl_days: int = 365
     postcode_mismatch_km: float = 25.0
 
+    # Google Maps Platform: ONLY for the interactive distance calculator, never for jobs.
+    # Results are never persisted to PostgreSQL or exported; Redis cache is capped at 30 days.
+    google_maps_api_key: str | None = None
+    google_routes_enabled: bool = True
+    google_rps: float = 10.0
+    google_cache_ttl_hours: int = 24
+    google_language: str = "en"
+    google_timeout_s: float = 10.0
+    distance_per_user_per_min: int = 30
+    distance_map: Literal["leaflet", "off"] = "off"
+
     # Limits
     max_upload_mb: int = 100
     max_rows: int = 250_000
@@ -62,10 +78,36 @@ class Settings(BaseSettings):
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173"])
 
     @field_validator("openai_base_url", "openai_api_version", "openai_chat_deployment",
-                     "openai_embedding_deployment", "openai_api_key", "geocoder_api_key", mode="before")
+                     "openai_embedding_deployment", "openai_api_key", "geocoder_api_key", "google_maps_api_key",
+                     mode="before")
     @classmethod
     def _empty_is_none(cls, v: object) -> object:
         return None if isinstance(v, str) and not v.strip() else v
+
+    @field_validator("google_cache_ttl_hours")
+    @classmethod
+    def _cap_google_cache(cls, v: int) -> int:
+        if v > GOOGLE_MAX_CACHE_HOURS:
+            log.warning("GOOGLE_CACHE_TTL_HOURS=%d exceeds the 30-day limit; using %d", v, GOOGLE_MAX_CACHE_HOURS)
+            return GOOGLE_MAX_CACHE_HOURS
+        return max(0, v)
+
+    @model_validator(mode="after")
+    def _no_google_for_jobs(self) -> "Settings":
+        if self.geocoder_provider.strip().lower() == "google":
+            raise ValueError(
+                "GEOCODER_PROVIDER=google is not permitted: Google's terms forbid storing/exporting results. "
+                "Google is only used by the distance calculator (GOOGLE_MAPS_API_KEY)."
+            )
+        return self
+
+    @property
+    def distance_address_available(self) -> bool:
+        return bool(self.google_maps_api_key)
+
+    @property
+    def road_distance_available(self) -> bool:
+        return bool(self.google_maps_api_key) and self.google_routes_enabled
 
     @property
     def ai_available(self) -> bool:

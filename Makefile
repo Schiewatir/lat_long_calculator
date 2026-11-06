@@ -8,7 +8,7 @@ migrate:
 
 test:
 	cd backend && .venv/bin/pytest -q
-	cd frontend && npm run -s typecheck && npm run -s build
+	cd frontend && npm run -s test && npm run -s typecheck && npm run -s build
 
 lint:
 	cd backend && .venv/bin/ruff check app tests

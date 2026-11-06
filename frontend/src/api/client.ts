@@ -1,4 +1,5 @@
 /** Fetch wrapper: same-origin cookies, CSRF double-submit header, 401 -> login redirect. */
+import type { DistanceRequest, DistanceResponse } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -55,4 +56,8 @@ export async function api<T = unknown>(path: string, init: RequestInit & { json?
     throw new ApiError(res.status, messageOf(detail, `Request failed (${res.status})`), detail)
   }
   return payload as T
+}
+
+export function calculateDistance(req: DistanceRequest) {
+  return api<DistanceResponse>('/distance', { json: req })
 }
