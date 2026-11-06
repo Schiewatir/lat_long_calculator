@@ -1,0 +1,64 @@
+body {
+  margin: 0;
+}
+
+.grid-row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+  font-size: var(--mantine-font-size-sm);
+  cursor: pointer;
+}
+
+.grid-row:hover {
+  background: var(--mantine-color-default-hover);
+}
+
+.grid-row[data-selected='true'] {
+  background: var(--mantine-primary-color-light);
+}
+
+.grid-head {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--mantine-color-body);
+  border-bottom: 2px solid var(--mantine-color-default-border);
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--mantine-color-dimmed);
+}
+
+.grid-cell {
+  padding: 6px 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.grid-cell.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+}
+
+.leaflet-container {
+  border-radius: var(--mantine-radius-md);
+}
+
+.pin-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
